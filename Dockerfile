@@ -7,7 +7,7 @@ RUN rustup target add $TARGET
 RUN mkdir /usr/src/$APP_NAME
 WORKDIR /usr/src/$APP_NAME
 
-RUN apt-get install g++-aarch64-linux-gnu libc6-dev-arm64-cross
+RUN apt-get install -y g++-aarch64-linux-gnu libc6-dev-arm64-cross
 ENV CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER="aarch64-linux-gnu-gcc"
 
 COPY Cargo.toml Cargo.lock ./
