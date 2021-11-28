@@ -1,10 +1,36 @@
-FROM arm64v8/rust:1.54 as builder
-WORKDIR /usr/src/impossiblebot
-COPY . .
-RUN cargo install --path .
+FROM rust as builder
+ARG APP_NAME="impossiblebot"
+ARG TARGET="aarch64-unknown-linux-musl"
+ARG GITHUB_SSH_KEY=""
+RUN apt-get update
+RUN rustup target add $TARGET
+RUN mkdir /usr/src/$APP_NAME
+WORKDIR /usr/src/$APP_NAME
+
+ENV CARGO_NET_GIT_FETCH_WITH_CLI=true
+
+COPY Cargo.toml Cargo.lock ./
+COPY ./src ./src
+
+RUN mkdir /root/.ssh/
+RUN echo "$GITHUB_SSH_KEY" > /root/.ssh/id_rsa;
+RUN chmod 400 /root/.ssh/id_rsa
+RUN ssh-keyscan -H github.com >> /etc/ssh/ssh_known_hosts
+
+RUN cargo build --release --target=$TARGET
+RUN groupadd -g 10001 -r $APP_NAME
+RUN useradd -r -g $APP_NAME -u 10001 $APP_NAME
+
+# ------------------------------------------------------------------------------
+# Final Stage
+# ------------------------------------------------------------------------------
 
 FROM debian:buster-slim
-RUN apt-get update && rm -rf /var/lib/apt/lists/*
-COPY --from=builder /usr/local/cargo/bin/impossiblebot /usr/local/bin/impossiblebot
-LABEL com.centurylinklabs.watchtower.enable="true"
-CMD ["impossiblebot"]
+ARG APP_NAME="impossiblebot"
+ARG TARGET="aarch64-unknown-linux-musl"
+WORKDIR /user/local/bin/
+COPY --from=0 /etc/passwd /etc/passwd
+COPY --from=builder /usr/src/$APP_NAME/target/$TARGET/release/$APP_NAME ./impossiblebot
+USER $APP_NAME
+
+CMD ["./impossiblebot"]
