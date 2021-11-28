@@ -1,4 +1,4 @@
-FROM rustembedded/cross:aarch64-unknown-linux-gnu-0.2.1
+FROM rustembedded/cross:aarch64-unknown-linux-gnu-0.2.1 as builder
 RUN dpkg --add-architecture arm64 && \
     apt-get update && \
     apt-get install --assume-yes libfoo:arm64
