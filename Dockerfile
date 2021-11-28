@@ -1,4 +1,4 @@
-FROM rust:1.54 as builder
+FROM arm64v8/rust:1.54 as builder
 WORKDIR /usr/src/impossiblebot
 COPY . .
 RUN cargo install --path .
