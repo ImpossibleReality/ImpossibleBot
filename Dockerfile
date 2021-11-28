@@ -7,15 +7,8 @@ RUN rustup target add $TARGET
 RUN mkdir /usr/src/$APP_NAME
 WORKDIR /usr/src/$APP_NAME
 
-ENV CARGO_NET_GIT_FETCH_WITH_CLI=true
-
 COPY Cargo.toml Cargo.lock ./
 COPY ./src ./src
-
-RUN mkdir /root/.ssh/
-RUN echo "$GITHUB_SSH_KEY" > /root/.ssh/id_rsa;
-RUN chmod 400 /root/.ssh/id_rsa
-RUN ssh-keyscan -H github.com >> /etc/ssh/ssh_known_hosts
 
 RUN cargo build --release --target=$TARGET
 RUN groupadd -g 10001 -r $APP_NAME
