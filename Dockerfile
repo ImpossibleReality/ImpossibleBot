@@ -9,7 +9,6 @@ WORKDIR /usr/src/$APP_NAME
 
 RUN apt-get install -y g++-aarch64-linux-gnu libc6-dev-arm64-cross
 ENV CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER="aarch64-linux-gnu-gcc"
-RUN rustup target add $TARGET
 
 COPY Cargo.toml Cargo.lock ./
 COPY ./src ./src
