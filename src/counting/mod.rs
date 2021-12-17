@@ -6,6 +6,12 @@ use mongodb::bson::doc;
 use serenity::model::prelude::*;
 use serenity::prelude::*;
 
+const X_EMOJI: EmojiIdentifier = EmojiIdentifier {
+    animated: false,
+    id: 919665739198251070,
+    name: "white_x_mark".to_string()
+};
+
 pub async fn handle_message(ctx: &Context, message: Message) {
     if !message.author.bot {
         if let Some(channel) = counting_channel(ctx, message.channel_id).await {
@@ -14,25 +20,28 @@ pub async fn handle_message(ctx: &Context, message: Message) {
                     == channel.last_count_user.unwrap_or("".to_string())
                 {
                     message
-                        .react(&ctx.http, ReactionType::Unicode("👎".to_string()))
+                        .react(&ctx.http, X_EMOJI)
                         .await;
                     message.channel_id.send_message(&ctx.http, |msg| {
                         msg.reference_message(&message)
                             .allowed_mentions(|mentions| {
                                 mentions.replied_user(true)
                             })
-                            .content(format!("*Whoops!!! Wait until another person can go, {}*\n**Restarting at 1**", message.author.mention()))
+                            .content(format!("*Whoops!!! Wait until another person can go, {}*", message.author.mention()))
+                    }).await;
+                    message.channel_id.send_message(&ctx.http, |msg| {
+                        msg.content("**Restarting at 1**")
                     }).await;
                     restart_channel(ctx, message.channel_id).await;
                 } else {
                     if message.content == (channel.current_number + 1).to_string() {
                         message
-                            .react(&ctx.http, ReactionType::Unicode("✅".to_string()))
+                            .react(&ctx.http, '✅')
                             .await;
                         next_number(ctx, &message).await;
                     } else {
                         message
-                            .react(&ctx.http, ReactionType::Unicode("👎".to_string()))
+                            .react(&ctx.http, X_EMOJI)
                             .await;
                         message
                             .channel_id
@@ -40,7 +49,7 @@ pub async fn handle_message(ctx: &Context, message: Message) {
                                 msg.reference_message(&message)
                                     .allowed_mentions(|mentions| mentions.replied_user(true))
                                     .content(format!(
-                                        "*Whoops!!! Wrong number, {}*\nRestarting at **1**",
+                                        "*Whoops!!! Wrong number, {}\n*Restarting at **1**",
                                         message.author.mention()
                                     ))
                             })
@@ -161,5 +170,38 @@ async fn setup_channel(ctx: &Context, channel: &PartialChannel) -> bool {
             .await
             .unwrap();
         return true;
+    }
+}
+
+async fn remove_channel(ctx: &Context, channel: &PartialChannel) -> bool {
+    let mut data_lock = ctx.data.write().await;
+    let app_data = data_lock
+        .get_mut::<AppData>()
+        .expect("AppData not provided");
+    let db = &mut app_data.database;
+
+    let channels = db.collection::<models::Channel>("channels");
+    if let Some(_) = channels
+        .find_one(
+            doc! {
+                "id": channel.id.to_string()
+            },
+            None,
+        )
+        .await
+        .expect("Error finding channel")
+    {
+        channels
+            .delete_one(
+                doc! {
+                    "id": channel.id.to_string(),
+                },
+                None,
+            )
+            .await
+            .unwrap();
+        return true;
+    } else {
+        return false;
     }
 }

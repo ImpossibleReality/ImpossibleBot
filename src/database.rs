@@ -16,10 +16,10 @@ pub async fn connect() -> Database {
     let client = Client::with_options(client_options).expect("Error connecting to database");
 
     client
-        .database("impossiblebot")
+        .database(&*env::var("DATABASE_NAME").unwrap_or("impossiblebot".to_string()))
         .run_command(doc! {"ping": 1}, None)
         .await
         .expect("Error connecting to MongoDB database");
 
-    return client.database("impossiblebot");
+    return client.database(&*env::var("DATABASE_NAME").unwrap_or("impossiblebot".to_string()));
 }

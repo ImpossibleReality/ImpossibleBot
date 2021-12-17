@@ -44,6 +44,7 @@ use std::env;
 
 pub struct AppData {
     database: Database,
+
 }
 
 impl TypeMapKey for AppData {
@@ -96,6 +97,7 @@ async fn main() {
     logging::logger_init();
     info!("Connecting to database...");
     let db = database::connect().await;
+    info!("Connected to database");
 
     info!("Logging into Discord...");
     // Login with a bot token from the environment
