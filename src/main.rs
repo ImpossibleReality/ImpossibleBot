@@ -82,7 +82,7 @@ impl EventHandler for Handler {
         if let Interaction::ApplicationCommand(command) = interaction {
             commands::handle_command_interaction(command, &ctx).await
         } else if let Interaction::MessageComponent(component) = interaction {
-            // commands::handle_component_interaction(component, ctx).await
+            commands::handle_component_interaction(component, &ctx).await
         }
     }
 

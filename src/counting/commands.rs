@@ -1,4 +1,5 @@
-use super::{ setup_channel, remove_channel, X_EMOJI };
+use std::fmt::{Display, Formatter};
+use super::{setup_channel, remove_channel, X_EMOJI };
 use serenity::builder::CreateApplicationCommands;
 use serenity::model::interactions::application_command::{
     ApplicationCommandInteraction, ApplicationCommandInteractionDataOptionValue,
@@ -67,7 +68,7 @@ pub async fn handle(interaction: ApplicationCommandInteraction, ctx: &Context) {
                             .kind(InteractionResponseType::ChannelMessageWithSource)
                             .interaction_response_data(|data| {
                                 data.content(format!(
-                                    "<:white_x_mark:{}> You are not an administrator!",
+                                    "{} You are not an administrator!",
                                     X_EMOJI
                                 ))
                                     .flags(InteractionApplicationCommandCallbackDataFlags::EPHEMERAL)
@@ -104,6 +105,16 @@ async fn setup_command(interaction: &ApplicationCommandInteraction, ctx: &Contex
                         })
                 })
                 .await;
+            if let Some(quiet) = subcommand.options.get(1) {
+                if let ApplicationCommandInteractionDataOptionValue::Boolean(quiet) = quiet.resolved.clone().unwrap() {
+                    if quiet {
+                        return
+                    }
+                }
+            }
+            channel.id.send_message(&ctx.http, |msg| {
+                msg.content("This channel has been setup for counting!\n**Start by saying the number `1`**")
+            }).await;
         } else {
             interaction
                 .create_interaction_response(&ctx.http, |response| {

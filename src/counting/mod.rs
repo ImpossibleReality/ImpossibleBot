@@ -1,15 +1,48 @@
 pub mod commands;
 
+use std::fmt::{Display, Formatter};
 use crate::models;
 use crate::AppData;
 use mongodb::bson::doc;
 use serenity::model::prelude::*;
 use serenity::prelude::*;
 
-const X_EMOJI: EmojiIdentifier = EmojiIdentifier {
+struct EmojiRef {
+    animated: bool,
+    id: EmojiId,
+    name: &'static str
+}
+
+impl Display for EmojiRef {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "<{}:{}:{}>", if self.animated { "a" } else { "" }, self.name, self.id)
+    }
+}
+
+impl From<&EmojiRef> for ReactionType {
+    fn from(emoji: &EmojiRef) -> Self {
+        ReactionType::Custom {
+            animated: emoji.animated,
+            id: emoji.id,
+            name: Some(String::from(emoji.name))
+        }
+    }
+}
+
+impl From<&EmojiRef> for EmojiIdentifier {
+    fn from(emoji: &EmojiRef) -> EmojiIdentifier {
+        EmojiIdentifier {
+            animated: emoji.animated,
+            id: emoji.id,
+            name: String::from(emoji.name)
+        }
+    }
+}
+
+static X_EMOJI: EmojiRef = EmojiRef {
     animated: false,
-    id: 919665739198251070,
-    name: "white_x_mark".to_string()
+    id: EmojiId(919665575813333013),
+    name: "white_x_mark"
 };
 
 pub async fn handle_message(ctx: &Context, message: Message) {
@@ -20,8 +53,8 @@ pub async fn handle_message(ctx: &Context, message: Message) {
                     == channel.last_count_user.unwrap_or("".to_string())
                 {
                     message
-                        .react(&ctx.http, X_EMOJI)
-                        .await;
+                        .react(&ctx.http, &X_EMOJI)
+                        .await.unwrap();
                     message.channel_id.send_message(&ctx.http, |msg| {
                         msg.reference_message(&message)
                             .allowed_mentions(|mentions| {
@@ -30,7 +63,7 @@ pub async fn handle_message(ctx: &Context, message: Message) {
                             .content(format!("*Whoops!!! Wait until another person can go, {}*", message.author.mention()))
                     }).await;
                     message.channel_id.send_message(&ctx.http, |msg| {
-                        msg.content("**Restarting at 1**")
+                        msg.content("**Restarting at `1`**")
                     }).await;
                     restart_channel(ctx, message.channel_id).await;
                 } else {
@@ -41,15 +74,15 @@ pub async fn handle_message(ctx: &Context, message: Message) {
                         next_number(ctx, &message).await;
                     } else {
                         message
-                            .react(&ctx.http, X_EMOJI)
-                            .await;
+                            .react(&ctx.http, &X_EMOJI)
+                            .await.unwrap();
                         message
                             .channel_id
                             .send_message(&ctx.http, |msg| {
                                 msg.reference_message(&message)
                                     .allowed_mentions(|mentions| mentions.replied_user(true))
                                     .content(format!(
-                                        "*Whoops!!! Wrong number, {}\n*Restarting at **1**",
+                                        "*Whoops!!! Wrong number, {}*\n**Restarting at `1`**",
                                         message.author.mention()
                                     ))
                             })
